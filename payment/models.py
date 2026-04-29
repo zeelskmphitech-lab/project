@@ -55,8 +55,6 @@ class Address(models.Model):
     pincode = models.IntegerField()
     
 class CouponCode(models.Model):
-    
-    
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True,default="Null")
     make_coupon_code = models.CharField(blank=False,null=False,default="Not Available")
