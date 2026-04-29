@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cart,Buy,Checkout,CartItem,Address
+from .models import Cart,Buy,Checkout,CartItem,Address,CouponCode
 
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,3 +29,9 @@ class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = ['id', 'country', 'state', 'city', 'pincode']
+        
+        
+class CouponCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CouponCode
+        fields = '__all__'
