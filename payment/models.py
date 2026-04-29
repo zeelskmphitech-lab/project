@@ -55,8 +55,17 @@ class Address(models.Model):
     pincode = models.IntegerField()
     
 class CouponCode(models.Model):
+    DISCOUNT_TYPE_CHOICE ={
+                        "Fixed Amount Discounts":"Fixed Amount Discounts",
+                        "Percentage Discounts (With Caps)":"Percentage Discounts (With Caps)",
+                        "BOGO":"BOGO",
+                        "Minimum Spend Coupons (Thresholds)":"Minimum Spend Coupons (Thresholds)",
+                        "Category-Specific Discounts":"Category-Specific Discounts",
+                        "First-Purchase / New User Coupons":"First-Purchase / New User Coupons"
+    }
+    
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True,default="Null")
     make_coupon_code = models.CharField(blank=False,null=False,default="Not Available")
-    discount_type = models.CharField(blank=False,null=False,default="No Discount")
+    discount_type = models.CharField(blank=False,null=False,default="No Discount",choices=DISCOUNT_TYPE_CHOICE)
     
