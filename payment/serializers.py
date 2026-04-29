@@ -46,6 +46,6 @@ class CouponCodeSerializer(serializers.ModelSerializer):
         return product
     
 class ReviewsSerializer(serializers.ModelSerializer):
-    class MEta:
+    class Meta:
         model = Reviews
         fields = ['id','product','review']

@@ -19,18 +19,34 @@ class CartItem(models.Model):
         return self.product.price * self.quantity
     
 class Buy(models.Model):
+    PAYMENT_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+    )
+    PAYMENT_METHOD_CHOICES = (
+        ('cod', 'Cash on Delivery'),
+        ('card', 'Card'),
+        ('upi', 'UPI'),
+    )
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True)
-    quantity = models.IntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    final_price = models.DecimalField(max_digits=10,decimal_places=2,default=0)
+    quantity = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
+    final_price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
     coupon_code = models.CharField(max_length=50, null=True, blank=True)
     payment_status = models.CharField(
         max_length=20,
-        default="pending"
+        choices=PAYMENT_STATUS_CHOICES,
+        default='pending'
     )
-    payment_method = models.CharField(max_length=20, null=True, blank=True)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        null=True,
+        blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     
 class Checkout(models.Model):

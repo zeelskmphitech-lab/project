@@ -10,6 +10,7 @@ from .serializers import CartSerializer,BuySerializer,CheckoutSerializer,CartIte
 from django.db import transaction
 from .permissions import IsSeller
 from decimal import Decimal
+from django.shortcuts import get_object_or_404
 
 class CartCreateView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -189,12 +190,31 @@ class CouponCodeCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
         
+class MyOrdersView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = BuySerializer
+
+    def get_queryset(self):
+        return Buy.objects.filter(user=self.request.user)
+        
 class ReviewsView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CouponCodeSerializer
-    
+    serializer_class = ReviewsSerializer
+
     def get_queryset(self):
-        return CouponCode.objects.filter(user=self.request.user)
-    
+        return Reviews.objects.filter(user=self.request.user)
+
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        user = self.request.user
+        buy_id = self.kwargs.get("buy_id")
+
+        buy = get_object_or_404(Buy, id=buy_id, user=user)
+
+        if Reviews.objects.filter(user=user, buy=buy).exists():
+            raise serializers.ValidationError("You already reviewed this product")
+
+        serializer.save(
+            user=user,
+            product=buy.product,
+            buy=buy
+        )
