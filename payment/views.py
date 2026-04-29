@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
-from .models import Cart , Buy , Checkout , CartItem , CheckoutItem , Address , CouponCode
-from .serializers import CartSerializer,BuySerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer
+from .models import Cart , Buy , Checkout , CartItem , CheckoutItem , Address , CouponCode,Reviews
+from .serializers import CartSerializer,BuySerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer
 from django.db import transaction
 from .permissions import IsSeller
 from decimal import Decimal
@@ -180,7 +180,17 @@ class AddressView(generics.CreateAPIView):
         serializer.save(user=self.request.user)
         
 class CouponCodeCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated       , IsSeller]
+    permission_classes = [IsAuthenticated, IsSeller]
+    serializer_class = CouponCodeSerializer
+    
+    def get_queryset(self):
+        return CouponCode.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        
+class ReviewsView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = CouponCodeSerializer
     
     def get_queryset(self):

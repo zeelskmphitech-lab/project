@@ -102,3 +102,9 @@ class CouponCode(models.Model):
             discount = self.value
         
         return min(discount, cart_total)
+    
+class Reviews(models.Model):
+    user = models.ForeignKey(Users,on_delete=models.CASCADE)
+    product = models.ForeignKey(Products,on_delete=models.CASCADE)
+    buy = models.ForeignKey(Buy,on_delete=models.CASCADE)
+    review = models.TextField()

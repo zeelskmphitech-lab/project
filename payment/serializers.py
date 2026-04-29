@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cart,Buy,Checkout,CartItem,Address,CouponCode
+from .models import Cart,Buy,Checkout,CartItem,Address,CouponCode,Reviews
 
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -44,3 +44,8 @@ class CouponCodeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You can only create coupon for your own product")
 
         return product
+    
+class ReviewsSerializer(serializers.ModelSerializer):
+    class MEta:
+        model = Reviews
+        fields = ['id','product','review']
