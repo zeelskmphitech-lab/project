@@ -3,6 +3,7 @@ from users.models import Users
 from product.models import Products
 from django.utils import timezone
 from product.models import Products
+from django.core.exceptions import ValidationError
 
 class Cart(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
@@ -55,17 +56,49 @@ class Address(models.Model):
     pincode = models.IntegerField()
     
 class CouponCode(models.Model):
-    DISCOUNT_TYPE_CHOICE ={
-                        "Fixed Amount Discounts":"Fixed Amount Discounts",
-                        "Percentage Discounts (With Caps)":"Percentage Discounts (With Caps)",
-                        "BOGO":"BOGO",
-                        "Minimum Spend Coupons (Thresholds)":"Minimum Spend Coupons (Thresholds)",
-                        "Category-Specific Discounts":"Category-Specific Discounts",
-                        "First-Purchase / New User Coupons":"First-Purchase / New User Coupons"
-    }
+    DISCOUNT_CHOICES = (
+        ('percentage', 'Percentage'),
+        ('fixed', 'Fixed Amount'),
+    )
     
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True,default="Null")
     make_coupon_code = models.CharField(blank=False,null=False,default="Not Available")
-    discount_type = models.CharField(blank=False,null=False,default="No Discount",choices=DISCOUNT_TYPE_CHOICE)
+    discount_type = models.CharField(blank=False,null=False,default="No Discount",choices=DISCOUNT_CHOICES)
+    value = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    min_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    max_discount_limit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_to = models.DateTimeField(default=timezone.now)
+    active = models.BooleanField(default=True)
     
+    def clean(self):
+        if self.discount_type == 'percentage' and self.value > 100:
+            raise ValidationError("Percentage discount cannot be more than 100%.")
+        
+        if self.discount_type == 'percentage' and not self.max_discount_limit:
+            raise ValidationError("Please provide a Maximum Discount Limit for percentage coupons.")
+
+    def is_valid(self, cart_total):
+        now = timezone.localtime()
+
+        if not self.active:
+            return False
+
+        if not (self.valid_from <= now <= self.valid_to):
+            return False
+
+        if cart_total < self.min_purchase_amount:
+            return False
+
+        return True
+
+    def calculate_discount(self, cart_total):
+        if self.discount_type == 'percentage':
+            discount = (cart_total * self.value) / 100
+            if self.max_discount_limit:
+                discount = min(discount, self.max_discount_limit)
+        else:
+            discount = self.value
+        
+        return min(discount, cart_total)

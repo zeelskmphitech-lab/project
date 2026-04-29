@@ -34,4 +34,13 @@ class AddressSerializer(serializers.ModelSerializer):
 class CouponCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CouponCode
-        fields = '__all__'
+        fields = ['id','product','make_coupon_code','discount_type','value','min_purchase_amount','max_discount_limit','valid_from','valid_to','active']    
+        read_only_fields = ['user']
+
+    def validate_product(self, product):
+        user = self.context['request'].user
+
+        if product.user != user:
+            raise serializers.ValidationError("You can only create coupon for your own product")
+
+        return product

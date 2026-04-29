@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cart,Buy,Checkout,CartItem,CheckoutItem,Address
+from .models import Cart,Buy,Checkout,CartItem,CheckoutItem,Address,CouponCode
 
 
 @admin.register(Cart)
@@ -34,3 +34,8 @@ class CheckoutItemAdmin(admin.ModelAdmin):
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('country','state','city','pincode')
     list_filter = ('country','state','city')
+    
+@admin.register(CouponCode)
+class CouponCodeAdmin(admin.ModelAdmin):
+    list_display = ('id','product','make_coupon_code','discount_type','value','min_purchase_amount','max_discount_limit','valid_from','valid_to','active')
+    list_filter = ('active',)

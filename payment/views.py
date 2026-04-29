@@ -8,6 +8,7 @@ from rest_framework import serializers
 from .models import Cart , Buy , Checkout , CartItem , CheckoutItem , Address , CouponCode
 from .serializers import CartSerializer,BuySerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer
 from django.db import transaction
+from .permissions import IsSeller
 from decimal import Decimal
 
 class CartCreateView(generics.ListAPIView):
@@ -101,49 +102,60 @@ class CheckoutView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        checkout = serializer.save(user=user, cart=cart)
+        with transaction.atomic():
 
-        total = 0
-        discount = 0
+            checkout = serializer.save(user=user, cart=cart)
 
-        code = (checkout.coupon_code or "").strip().upper()
+            items = cart.items.all()
+            total = sum(item.product.price * item.quantity for item in items)
 
-        for item in items:
-            item_total = item.product.price * item.quantity
-            item_discount = 0
+            discount = Decimal("0")
+            coupon = None
 
-            code = (checkout.coupon_code or "").strip().upper()
+            code = (checkout.coupon_code or "").strip()
 
-            
-            if code == "SAVE20":
-                item_discount = item_total * Decimal("0.20")
+            if code:
+                try:
+                    coupon = CouponCode.objects.get(make_coupon_code__iexact=code)
+                except CouponCode.DoesNotExist:
+                    return Response({"error": "Invalid coupon code"}, status=400)
 
-            elif code == "SAVE30":
-                item_discount = item_total * Decimal("0.30")
+            if coupon:
+                if not coupon.is_valid(total):
+                    return Response({"error": "Coupon not valid"}, status=400)
 
-            elif code == "SAVE100":
-                item_discount = item_total
+                discount = coupon.calculate_discount(total)
 
-            elif code == "BOAT50" and item.product.id == 7:
-                item_discount = item_total * Decimal("0.50")
+            final_total = total - discount
 
-            final_price = item_total - item_discount
+            checkout.total_amount = final_total
+            checkout.discount_amount = discount
+            checkout.save()
 
-            Buy.objects.create(
-                user=user,
-                product=item.product,
-                quantity=item.quantity,
-                price=item.product.price,
-                discount=item_discount,
-                final_price=final_price,
-                coupon_code=checkout.coupon_code,
-                payment_status="pending"
-            )
+            for item in items:
+                item_total = item.product.price * item.quantity
 
-        cart.is_active = False
-        cart.save()
+                item_discount = (item_total / total) * discount if total > 0 else Decimal("0")
 
-        cart.items.all().delete()
+                if coupon and coupon.product and item.product != coupon.product:
+                    item_discount = Decimal("0")
+
+                final_price = item_total - item_discount
+
+                Buy.objects.create(
+                    user=user,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price=item.product.price,
+                    discount=item_discount,
+                    final_price=final_price,
+                    coupon_code=checkout.coupon_code,
+                    payment_status="pending"
+                )
+
+            cart.is_active = False
+            cart.save()
+            items.delete()
 
         return Response({
             "message": "Checkout successful",
@@ -168,11 +180,11 @@ class AddressView(generics.CreateAPIView):
         serializer.save(user=self.request.user)
         
 class CouponCodeCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated       , IsSeller]
     serializer_class = CouponCodeSerializer
     
     def get_queryset(self):
         return CouponCode.objects.filter(user=self.request.user)
     
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(user=self.request.user)
