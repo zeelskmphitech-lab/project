@@ -231,7 +231,13 @@ class PurchaseView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Purchase.objects.filter(user=self.request.user)
     def perform_create(self,serializer):
-        if Address.have_address == True:
+        address = Address.objects.filter(
+            user=self.request.user,
+        )
+        if address: 
+            Address.have_address = True
             serializer.save(user=self.request.user)
-        elif Address.have_address == False:
-            raise serializers.ValidationError({"massage":"Please Assign Address First."})   
+        elif not address:
+            raise serializers.ValidationError({
+                "massage":"Please Assign Address First."
+            })
