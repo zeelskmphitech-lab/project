@@ -18,7 +18,7 @@ class CartItem(models.Model):
     def total_price(self):
         return self.product.price * self.quantity
     
-class Buy(models.Model):
+class Checkout(models.Model):
     PAYMENT_STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('paid', 'Paid'),
@@ -30,12 +30,9 @@ class Buy(models.Model):
         ('upi', 'UPI'),
     )
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
-    product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True)
-    quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
-    final_price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
-    coupon_code = models.CharField(max_length=50, null=True, blank=True)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    phoneno = models.BigIntegerField()
+    coupon_code = models.CharField(max_length=50, blank=True, null=True)
     payment_status = models.CharField(
         max_length=20,
         choices=PAYMENT_STATUS_CHOICES,
@@ -47,22 +44,19 @@ class Buy(models.Model):
         null=True,
         blank=True
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-class Checkout(models.Model):
-    user = models.ForeignKey(Users, on_delete=models.CASCADE)
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    phoneno = models.BigIntegerField()
-    coupon_code = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
         return f"{self.user}"
     
 class CheckoutItem(models.Model):
+    user = models.ForeignKey(Users,on_delete=models.CASCADE)
     checkout = models.ForeignKey(Checkout, on_delete=models.CASCADE)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
+    final_price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
+    coupon_code = models.CharField(max_length=50, null=True, blank=True)
     
 class Address(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
@@ -97,16 +91,12 @@ class CouponCode(models.Model):
 
     def is_valid(self, cart_total):
         now = timezone.localtime()
-
         if not self.active:
             return False
-
         if not (self.valid_from <= now <= self.valid_to):
             return False
-
         if cart_total < self.min_purchase_amount:
             return False
-
         return True
 
     def calculate_discount(self, cart_total):
@@ -122,5 +112,5 @@ class CouponCode(models.Model):
 class Reviews(models.Model):
     user = models.ForeignKey(Users,on_delete=models.CASCADE)
     product = models.ForeignKey(Products,on_delete=models.CASCADE)
-    buy = models.ForeignKey(Buy,on_delete=models.CASCADE)
+    checkoutitem = models.ForeignKey(CheckoutItem,on_delete=models.CASCADE)
     review = models.TextField()

@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
-from .models import Cart , Buy , Checkout , CartItem , CheckoutItem , Address , CouponCode,Reviews
-from .serializers import CartSerializer,BuySerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer
+from .models import Cart , Checkout , CartItem , Address , CouponCode,Reviews,CheckoutItem
+from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer
 from django.db import transaction
 from .permissions import IsSeller
 from decimal import Decimal
@@ -75,15 +75,6 @@ class CartItemUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
         else:
             serializer.save()
         
-class BuyView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = BuySerializer
-
-    def get_queryset(self):
-        return Buy.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
     
 class CheckoutView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -143,7 +134,8 @@ class CheckoutView(generics.CreateAPIView):
 
                 final_price = item_total - item_discount
 
-                Buy.objects.create(
+                CheckoutItem.objects.create(
+                    checkout=checkout,
                     user=user,
                     product=item.product,
                     quantity=item.quantity,
@@ -151,16 +143,17 @@ class CheckoutView(generics.CreateAPIView):
                     discount=item_discount,
                     final_price=final_price,
                     coupon_code=checkout.coupon_code,
-                    payment_status="pending"
                 )
-
             cart.is_active = False
             cart.save()
             items.delete()
-
+            
         return Response({
             "message": "Checkout successful",
-            "checkout_id": checkout.id
+            "checkout_id": checkout.id,
+            "items": serializer.data,
+            "cart_total": final_total,
+            "discount":discount
         }, status=status.HTTP_201_CREATED)
         
 class AddressView(generics.CreateAPIView):
@@ -192,29 +185,30 @@ class CouponCodeCreateView(generics.ListCreateAPIView):
         
 class MyOrdersView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = BuySerializer
+    serializer_class = CheckoutSerializer
 
     def get_queryset(self):
-        return Buy.objects.filter(user=self.request.user)
+        return Checkout.objects.filter(user=self.request.user)
         
-class ReviewsView(generics.ListCreateAPIView):
+class ReviewsView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ReviewsSerializer
 
-    def get_queryset(self):
-        return Reviews.objects.filter(user=self.request.user)
-
     def perform_create(self, serializer):
         user = self.request.user
-        buy_id = self.kwargs.get("buy_id")
+        checkoutitem_id = self.kwargs.get("checkoutitem_id")
 
-        buy = get_object_or_404(Buy, id=buy_id, user=user)
+        checkoutitem = get_object_or_404(
+            CheckoutItem,
+            id=checkoutitem_id,
+            checkout__user=user
+        )
 
-        if Reviews.objects.filter(user=user, buy=buy).exists():
+        if Reviews.objects.filter(user=user, checkoutitem=checkoutitem).exists():
             raise serializers.ValidationError("You already reviewed this product")
 
         serializer.save(
             user=user,
-            product=buy.product,
-            buy=buy
+            product=checkoutitem.product,
+            checkoutitem=checkoutitem
         )
