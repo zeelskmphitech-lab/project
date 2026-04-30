@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
+from product.models import Products
 from .models import Cart , Checkout , CartItem , Address , CouponCode,Reviews,CheckoutItem
 from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer
 from django.db import transaction
@@ -99,38 +100,37 @@ class CheckoutView(generics.CreateAPIView):
             checkout = serializer.save(user=user, cart=cart)
 
             items = cart.items.all()
-            total = sum(item.product.price * item.quantity for item in items)
 
+            total = Decimal("0")
             discount = Decimal("0")
-            coupon = None
 
             code = (checkout.coupon_code or "").strip()
+            coupon = None
 
             if code:
-                try:
-                    coupon = CouponCode.objects.get(make_coupon_code__iexact=code)
-                except CouponCode.DoesNotExist:
+                coupon = CouponCode.objects.filter(
+                    make_coupon_code__iexact=code,
+                    active=True
+                ).first()
+
+                if not coupon:
                     return Response({"error": "Invalid coupon code"}, status=400)
-
-            if coupon:
-                if not coupon.is_valid(total):
-                    return Response({"error": "Coupon not valid"}, status=400)
-
-                discount = coupon.calculate_discount(total)
-
-            final_total = total - discount
-
-            checkout.total_amount = final_total
-            checkout.discount_amount = discount
-            checkout.save()
 
             for item in items:
                 item_total = item.product.price * item.quantity
+                total += item_total
 
-                item_discount = (item_total / total) * discount if total > 0 else Decimal("0")
+                item_discount = Decimal("0")
 
-                if coupon and coupon.product and item.product != coupon.product:
-                    item_discount = Decimal("0")
+                if coupon:
+                    if coupon.discount_choice == 'all':
+                        item_discount = coupon.all_calculate_discount(item_total)
+
+                    elif coupon.discount_choice == 'product':
+                        if item.product == coupon.product:
+                            item_discount = coupon.product_calculate_discount(item_total)
+
+                discount += item_discount
 
                 final_price = item_total - item_discount
 
@@ -144,6 +144,16 @@ class CheckoutView(generics.CreateAPIView):
                     final_price=final_price,
                     coupon_code=checkout.coupon_code,
                 )
+
+            if coupon and not coupon.is_valid(total):
+                return Response({"error": "Coupon not valid"}, status=400)
+
+            final_total = total - discount
+
+            checkout.total_amount = final_total
+            checkout.discount_amount = discount
+            checkout.save()
+
             cart.is_active = False
             cart.save()
             items.delete()

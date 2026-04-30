@@ -70,10 +70,14 @@ class CouponCode(models.Model):
         ('percentage', 'Percentage'),
         ('fixed', 'Fixed Amount'),
     )
-    
+    TYPE_CHOICES = (
+        ('all',"Discount On Total Cart"),
+        ('product',"Discount On Specific Product")
+    )
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     product = models.ForeignKey(Products, on_delete=models.SET_NULL, null=True,default="Null")
-    make_coupon_code = models.CharField(blank=False,null=False,default="Not Available")
+    make_coupon_code = models.CharField(blank=False,null=False,default="all")
+    discount_choice = models.CharField(blank=False,null=False,default="No Discount",choices=TYPE_CHOICES)
     discount_type = models.CharField(blank=False,null=False,default="No Discount",choices=DISCOUNT_CHOICES)
     value = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     min_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -83,11 +87,13 @@ class CouponCode(models.Model):
     active = models.BooleanField(default=True)
     
     def clean(self):
-        if self.discount_type == 'percentage' and self.value > 100:
-            raise ValidationError("Percentage discount cannot be more than 100%.")
+        if self.discount_choice == 'all':
+            if self.discount_type == 'percentage' and self.value > 100:
+                raise ValidationError("Percentage discount cannot be more than 100%.")
+            
+            if self.discount_type == 'percentage' and not self.max_discount_limit:
+                raise ValidationError("Please provide a Maximum Discount Limit for percentage coupons.")
         
-        if self.discount_type == 'percentage' and not self.max_discount_limit:
-            raise ValidationError("Please provide a Maximum Discount Limit for percentage coupons.")
 
     def is_valid(self, cart_total):
         now = timezone.localtime()
@@ -99,15 +105,27 @@ class CouponCode(models.Model):
             return False
         return True
 
-    def calculate_discount(self, cart_total):
-        if self.discount_type == 'percentage':
-            discount = (cart_total * self.value) / 100
-            if self.max_discount_limit:
-                discount = min(discount, self.max_discount_limit)
-        else:
-            discount = self.value
+    def all_calculate_discount(self, cart_total):
+        if self.discount_choice == 'all':
+            if self.discount_type == 'percentage':
+                discount = (cart_total * self.value) / 100
+                if self.max_discount_limit:
+                    discount = min(discount, self.max_discount_limit)
+            else:
+                discount = self.value
+            
+            return min(discount, cart_total)
         
-        return min(discount, cart_total)
+    def product_calculate_discount(self,product_total):
+        if self.discount_choice == 'product':
+            if self.discount_type == 'percentage':
+                discount = (product_total * self.value) / 100
+                if self.max_discount_limit:
+                    discount = min(discount, self.max_discount_limit)
+            else:
+                discount = self.value
+            
+            return min(discount, product_total)
     
 class Reviews(models.Model):
     user = models.ForeignKey(Users,on_delete=models.CASCADE)

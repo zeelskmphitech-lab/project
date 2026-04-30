@@ -34,7 +34,7 @@ class AddressSerializer(serializers.ModelSerializer):
 class CouponCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CouponCode
-        fields = ['id','product','make_coupon_code','discount_type','value','min_purchase_amount','max_discount_limit','valid_from','valid_to','active']    
+        fields = ['id','product','make_coupon_code','discount_choice','discount_type','value','min_purchase_amount','max_discount_limit','valid_from','valid_to','active']    
         read_only_fields = ['user']
 
     def validate_product(self, product):
