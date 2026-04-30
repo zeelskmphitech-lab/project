@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
 from product.models import Products
-from .models import Cart , Checkout , CartItem , Address , CouponCode,Reviews,CheckoutItem
-from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer
+from .models import Cart , Checkout , CartItem , Address , CouponCode,Reviews,CheckoutItem,Purchase
+from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer,PurchaseSerializer
 from django.db import transaction
 from .permissions import IsSeller
 from decimal import Decimal
@@ -222,3 +222,12 @@ class ReviewsView(generics.CreateAPIView):
             product=checkoutitem.product,
             checkoutitem=checkoutitem
         )
+        
+class PurchaseView(generics.ListCreateAPIView):
+    permission_classes=[IsAuthenticated]
+    serializer_class = PurchaseSerializer
+    
+    def get_queryset(self):
+        return Purchase.objects.filter(user=self.request.user)
+    def perform_create(self,request):
+        

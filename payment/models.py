@@ -19,31 +19,12 @@ class CartItem(models.Model):
         return self.product.price * self.quantity
     
 class Checkout(models.Model):
-    PAYMENT_STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('paid', 'Paid'),
-        ('failed', 'Failed'),
-    )
-    PAYMENT_METHOD_CHOICES = (
-        ('cod', 'Cash on Delivery'),
-        ('card', 'Card'),
-        ('upi', 'UPI'),
-    )
+    
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     phoneno = models.BigIntegerField()
     coupon_code = models.CharField(max_length=50, blank=True, null=True)
-    payment_status = models.CharField(
-        max_length=20,
-        choices=PAYMENT_STATUS_CHOICES,
-        default='pending'
-    )
-    payment_method = models.CharField(
-        max_length=20,
-        choices=PAYMENT_METHOD_CHOICES,
-        null=True,
-        blank=True
-    )
+    
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
         return f"{self.user}"
@@ -132,3 +113,29 @@ class Reviews(models.Model):
     product = models.ForeignKey(Products,on_delete=models.CASCADE)
     checkoutitem = models.ForeignKey(CheckoutItem,on_delete=models.CASCADE)
     review = models.TextField()
+    
+class Purchase(models.Model):
+    PAYMENT_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+    )
+    PAYMENT_METHOD_CHOICES = (
+        ('cod', 'Cash on Delivery'),
+        ('card', 'Card'),
+        ('upi', 'UPI'),
+    )
+    user=models.ForeignKey(Users,on_delete=models.CASCADE)
+    checkout = models.ForeignKey(Checkout,on_delete=models.CASCADE)
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='pending'
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        null=False,
+        blank=False
+    )
+    purchased_at = models.DateTimeField(auto_now_add=True)

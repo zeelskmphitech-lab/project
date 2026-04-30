@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cart,CheckoutItem,Checkout,CartItem,Address,CouponCode,Reviews
+from .models import Cart,CheckoutItem,Checkout,CartItem,Address,CouponCode,Reviews,Purchase
 
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,7 +17,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     class Meta:
         model = Checkout
-        fields = ["id", 'phoneno',"coupon_code","created_at",'items','payment_method','payment_status']
+        fields = ["id", 'phoneno',"coupon_code","created_at",'items']
         read_only_fields = ["id", "created_at"]
         
 class CheckoutItemSerializer(serializers.ModelSerializer):
@@ -49,3 +49,8 @@ class ReviewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reviews
         fields = ['id','product','review']
+        
+class PurchaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Purchase
+        fields = ['payment_status','payment_method']
