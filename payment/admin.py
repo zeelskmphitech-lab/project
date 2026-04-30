@@ -25,7 +25,7 @@ class CheckoutItemAdmin(admin.ModelAdmin):
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
-    list_display = ('country','state','city','pincode')
+    list_display = ('country','state','city','pincode','have_address')
     list_filter = ('country','state','city')
     
 @admin.register(CouponCode)

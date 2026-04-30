@@ -180,7 +180,7 @@ class AddressView(generics.CreateAPIView):
             raise serializers.ValidationError({
                 "message": "Complete checkout before adding address."
             })
-        else:
+        elif not cart:
             Address.have_address = True
         serializer.save(user=self.request.user)
         
@@ -233,5 +233,5 @@ class PurchaseView(generics.ListCreateAPIView):
     def perform_create(self,serializer):
         if Address.have_address == True:
             serializer.save(user=self.request.user)
-        else:
-            raise serializers.ValidationError({"massage":"Please Assign Address First."})
+        elif Address.have_address == False:
+            raise serializers.ValidationError({"massage":"Please Assign Address First."})   
