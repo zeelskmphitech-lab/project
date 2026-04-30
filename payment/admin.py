@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cart,Checkout,CartItem,Address,CouponCode,Reviews,CheckoutItem
+from .models import Cart,Checkout,CartItem,Address,CouponCode,Reviews,CheckoutItem,Purchase
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
@@ -36,3 +36,7 @@ class CouponCodeAdmin(admin.ModelAdmin):
 @admin.register(Reviews)
 class ReviewAdmin(admin.ModelAdmin):
     list_display=('id','user','checkoutitem','product','review')
+    
+@admin.register(Purchase)
+class PurchaseAdmin(admin.ModelAdmin):
+    list_display=('payment_method','payment_status')

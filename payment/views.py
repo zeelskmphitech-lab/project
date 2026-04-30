@@ -180,7 +180,8 @@ class AddressView(generics.CreateAPIView):
             raise serializers.ValidationError({
                 "message": "Complete checkout before adding address."
             })
-
+        else:
+            Address.have_address = True
         serializer.save(user=self.request.user)
         
 class CouponCodeCreateView(generics.ListCreateAPIView):
@@ -229,5 +230,8 @@ class PurchaseView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         return Purchase.objects.filter(user=self.request.user)
-    def perform_create(self,request):
-        
+    def perform_create(self,serializer):
+        if Address.have_address == True:
+            serializer.save(user=self.request.user)
+        else:
+            raise serializers.ValidationError({"massage":"Please Assign Address First."})

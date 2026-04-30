@@ -45,6 +45,7 @@ class Address(models.Model):
     state = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
     pincode = models.IntegerField()
+    have_address = models.BooleanField(default=False)
     
 class CouponCode(models.Model):
     DISCOUNT_CHOICES = (
@@ -126,7 +127,7 @@ class Purchase(models.Model):
         ('upi', 'UPI'),
     )
     user=models.ForeignKey(Users,on_delete=models.CASCADE)
-    checkout = models.ForeignKey(Checkout,on_delete=models.CASCADE)
+    cartitem = models.ForeignKey(CartItem,on_delete=models.CASCADE,default=101)
     payment_status = models.CharField(
         max_length=20,
         choices=PAYMENT_STATUS_CHOICES,
