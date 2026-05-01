@@ -45,7 +45,6 @@ class Address(models.Model):
     state = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
     pincode = models.IntegerField()
-    have_address = models.BooleanField(default=False)
     
 class CouponCode(models.Model):
     DISCOUNT_CHOICES = (

@@ -258,6 +258,7 @@ class PurchaseView(generics.ListCreateAPIView):
         payment_method = serializer.validated_data.get("payment_method")
         
         already_purchased = Purchase.objects.filter(user=user,checkoutitem__in=items,has_purchased=True).exists()
+        print(already_purchased)
         
         if already_purchased:
             return Response({"error":"Already purchased this product."},status=400)
