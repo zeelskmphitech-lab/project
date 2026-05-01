@@ -21,10 +21,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
         
 class CheckoutItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_name = serializers.CharField(source='product.product_name')
     class Meta:
         model = CheckoutItem
-        fields = ['id','product','product_name','quantity','price','discount','final_price','coupon_code']
+        fields = ['id','product_name','quantity','price','discount','final_price','coupon_code']
         
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,9 +53,5 @@ class ReviewsSerializer(serializers.ModelSerializer):
 class PurchaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Purchase
-        fields = ['payment_method']
+        fields = ['payment_method','card_number']
         
-class CardPurchaseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Purchase
-        fields =['card_number']

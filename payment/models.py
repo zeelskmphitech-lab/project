@@ -28,7 +28,6 @@ class Checkout(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
         return f"{self.user}"
-    # purchased = models.BooleanField(default=False)
     
 class CheckoutItem(models.Model):
     user = models.ForeignKey(Users,on_delete=models.CASCADE)
@@ -39,6 +38,7 @@ class CheckoutItem(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
     final_price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
     coupon_code = models.CharField(max_length=50, null=True, blank=True)
+    purchased = models.BooleanField(default=False)
     
 class Address(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE,unique=True)

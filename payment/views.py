@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework import serializers
 from product.models import Products
 from .models import Cart , Checkout , CartItem , Address , CouponCode,Reviews,CheckoutItem,Purchase
-from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer,PurchaseSerializer,CardPurchaseSerializer
+from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer,PurchaseSerializer
 from django.db import transaction
 from .permissions import IsSeller
 from decimal import Decimal
@@ -247,7 +247,7 @@ class PurchaseView(generics.ListCreateAPIView):
         if not checkout:
             return Response({"error": "Checkout record not found."}, status=404)
         
-        items = CheckoutItem.objects.filter(checkout=checkout)
+        items = CheckoutItem.objects.filter(checkout=checkout,purchased=False)
         
         if not items.exists():
             return Response({"error": "No items in checkout"}, status=400)
@@ -256,9 +256,8 @@ class PurchaseView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         
         payment_method = serializer.validated_data.get("payment_method")
-        
         if payment_method == 'cod':
-            
+            data = []
             for item in items:
                 Purchase.objects.create(
                     user=user,
@@ -267,21 +266,28 @@ class PurchaseView(generics.ListCreateAPIView):
                     payment_status='pending',
                     has_purchased=True
                 )    
-                return Response(
-                    {
-                        "Price": item.final_price,
-                        "Product": item.product  
-                        })
-            return Response({"message":"Product Will Deliver soon."})
+                data.append({
+                    "product": item.product.product_name,
+                    "price": item.final_price
+                })
+            return Response(
+                {
+                    "Items":data,
+                    "message":"Product Will Deliver soon."
+                    })
             
         elif payment_method == 'card':
+            serializer = PurchaseSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            card_number=serializer.validated_data.get('card_number')
+            
             for item in items:
                 Purchase.objects.create(
                     user=user,
                     checkoutitem=item,
                     payment_method='card',
-                    payment_status='pending',
-                    has_purchased=True
+                    payment_status='paid',
+                    has_purchased=True,
+                    card_number=card_number
                 ) 
-            return Response(CardPurchaseSerializer(checkout).data)
-        
+            return Response({"message":"Payment Successful."})
