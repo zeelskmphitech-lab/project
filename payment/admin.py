@@ -39,4 +39,4 @@ class ReviewAdmin(admin.ModelAdmin):
     
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
-    list_display=('payment_method','payment_status')
+    list_display=('payment_method','payment_status','has_purchased')

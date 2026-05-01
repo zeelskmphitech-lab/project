@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework import serializers
 from product.models import Products
 from .models import Cart , Checkout , CartItem , Address , CouponCode,Reviews,CheckoutItem,Purchase
-from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer,PurchaseSerializer
+from .serializers import CartSerializer,CheckoutSerializer,CartItemSerializer,AddressSerializer , CouponCodeSerializer,ReviewsSerializer,CheckoutItemSerializer,PurchaseSerializer,CardPurchaseSerializer
 from django.db import transaction
 from .permissions import IsSeller
 from decimal import Decimal
@@ -180,7 +180,7 @@ class AddressView(generics.CreateAPIView):
             raise serializers.ValidationError({
                 "message": "Complete checkout before adding address."
             })
-        elif not cart:
+        else:
             Address.have_address = True
         serializer.save(user=self.request.user)
         
@@ -230,14 +230,60 @@ class PurchaseView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         return Purchase.objects.filter(user=self.request.user)
-    def perform_create(self,serializer):
-        address = Address.objects.filter(
+        
+    def create(self,request,*args,**kwargs):
+        user= request.user
+        checkout_id = self.kwargs.get('checkout_id')
+        
+        has_address = Address.objects.filter(
             user=self.request.user,
-        )
-        if address: 
-            Address.have_address = True
-            serializer.save(user=self.request.user)
-        elif not address:
+        ).exists()
+        
+        if not has_address:
             raise serializers.ValidationError({
                 "massage":"Please Assign Address First."
             })
+        
+        checkout = Checkout.objects.filter(id=checkout_id, user=user).first()
+        
+        if not checkout:
+            return Response({"error": "Checkout record not found."}, status=404)
+        
+        items = CheckoutItem.objects.filter(checkout=checkout)
+        
+        if not items.exists():
+            return Response({"error": "No items in checkout"}, status=400)
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        payment_method = serializer.validated_data.get("payment_method")
+        
+        if payment_method == 'cod':
+            
+            for item in items:
+                Purchase.objects.create(
+                    user=user,
+                    checkoutitem=item,
+                    payment_method='cod',
+                    payment_status='pending',
+                    has_purchased=True
+                )    
+                return Response(
+                    {
+                        "Price": item.final_price,
+                        "Product": item.product  
+                        })
+            return Response({"message":"Product Will Deliver soon."})
+            
+        elif payment_method == 'card':
+            for item in items:
+                Purchase.objects.create(
+                    user=user,
+                    checkoutitem=item,
+                    payment_method='card',
+                    payment_status='pending',
+                    has_purchased=True
+                ) 
+            return Response(CardPurchaseSerializer(checkout).data)
+        

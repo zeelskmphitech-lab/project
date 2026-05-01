@@ -10,5 +10,5 @@ urlpatterns = [
     path('create-coupon/', CouponCodeCreateView.as_view()),   
     path('review/<int:checkoutitem_id>/', ReviewsView.as_view()),   
     path('my-orders/', MyOrdersView.as_view()),
-    path('purchase/',PurchaseView.as_view()),
+    path('purchase/<int:checkout_id>/',PurchaseView.as_view(),name="purchase"),
 ]

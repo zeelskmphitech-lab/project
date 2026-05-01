@@ -28,6 +28,7 @@ class Checkout(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  
     def __str__(self):
         return f"{self.user}"
+    # purchased = models.BooleanField(default=False)
     
 class CheckoutItem(models.Model):
     user = models.ForeignKey(Users,on_delete=models.CASCADE)
@@ -127,7 +128,7 @@ class Purchase(models.Model):
         ('upi', 'UPI'),
     )
     user=models.ForeignKey(Users,on_delete=models.CASCADE)
-    cartitem = models.ForeignKey(CartItem,on_delete=models.CASCADE,default=101)
+    checkoutitem = models.ForeignKey(CheckoutItem,on_delete=models.CASCADE)
     payment_status = models.CharField(
         max_length=20,
         choices=PAYMENT_STATUS_CHOICES,
@@ -140,3 +141,5 @@ class Purchase(models.Model):
         blank=False
     )
     purchased_at = models.DateTimeField(auto_now_add=True)
+    has_purchased = models.BooleanField(default=False)
+    card_number = models.IntegerField(null=True,blank=True)

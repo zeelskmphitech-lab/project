@@ -53,4 +53,9 @@ class ReviewsSerializer(serializers.ModelSerializer):
 class PurchaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Purchase
-        fields = ['payment_status','payment_method']
+        fields = ['payment_method']
+        
+class CardPurchaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Purchase
+        fields =['card_number']
