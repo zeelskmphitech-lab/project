@@ -247,7 +247,7 @@ class PurchaseView(generics.ListCreateAPIView):
         if not checkout:
             return Response({"error": "Checkout record not found."}, status=404)
         
-        items = CheckoutItem.objects.filter(checkout=checkout,purchased=False)
+        items = CheckoutItem.objects.filter(checkout=checkout)
         
         if not items.exists():
             return Response({"error": "No items in checkout"}, status=400)
@@ -256,38 +256,69 @@ class PurchaseView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         
         payment_method = serializer.validated_data.get("payment_method")
-        if payment_method == 'cod':
-            data = []
-            for item in items:
-                Purchase.objects.create(
-                    user=user,
-                    checkoutitem=item,
-                    payment_method='cod',
-                    payment_status='pending',
-                    has_purchased=True
-                )    
-                data.append({
-                    "product": item.product.product_name,
-                    "price": item.final_price
-                })
-            return Response(
-                {
-                    "Items":data,
-                    "message":"Product Will Deliver soon."
+        
+        already_purchased = Purchase.objects.filter(user=user,checkoutitem__in=items,has_purchased=True).exists()
+        
+        if already_purchased:
+            return Response({"error":"Already purchased this product."},status=400)
+        
+        elif not already_purchased:
+            if payment_method == 'cod':
+                data = []
+                for item in items:
+                    Purchase.objects.create(
+                        user=user,
+                        checkoutitem=item,
+                        payment_method='cod',
+                        payment_status='pending',
+                        has_purchased=True
+                    )    
+                    data.append({
+                        "product": item.product.product_name,
+                        "price": item.final_price
                     })
+                return Response(
+                    {
+                        "Items":data,
+                        "message":"Product Will Deliver soon."
+                        })
+                
+            elif payment_method == 'card':
+                serializer = PurchaseSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                card_holder_name=serializer.validated_data.get('card_holder_name')
+                card_number=serializer.validated_data.get('card_number')
+                card_expiration_date=serializer.validated_data.get('card_expiration_date')
+                card_security_code=serializer.validated_data.get('card_security_code')                
+                
+                for item in items:
+                    Purchase.objects.create(
+                        user=user,
+                        checkoutitem=item,
+                        payment_method='card',
+                        payment_status='paid',
+                        has_purchased=True,
+                        card_holder_name=card_holder_name,
+                        card_number=card_number,
+                        card_expiration_date=card_expiration_date,
+                        card_security_code=card_security_code                        
+                    ) 
+                return Response({"message":"Payment Successful."})
             
-        elif payment_method == 'card':
-            serializer = PurchaseSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            card_number=serializer.validated_data.get('card_number')
-            
-            for item in items:
-                Purchase.objects.create(
-                    user=user,
-                    checkoutitem=item,
-                    payment_method='card',
-                    payment_status='paid',
-                    has_purchased=True,
-                    card_number=card_number
-                ) 
-            return Response({"message":"Payment Successful."})
+            elif payment_method == 'upi':
+                serializer = PurchaseSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                upi_id = serializer.validated_data.get('upi_id')
+                upi_pin = serializer.validated_data.get('upi_pin')
+                
+                for item in items:
+                    Purchase.objects.create(
+                        user=user,
+                        checkoutitem=item,
+                        payment_method='upi',
+                        payment_status='paid',
+                        has_purchased=True,
+                        upi_id=upi_id,
+                        upi_pin=upi_pin
+                    ) 
+                return Response({"message":"Payment Successful."})

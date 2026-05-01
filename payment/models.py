@@ -38,7 +38,6 @@ class CheckoutItem(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
     final_price = models.DecimalField(max_digits=10, decimal_places=2, default="0.00")
     coupon_code = models.CharField(max_length=50, null=True, blank=True)
-    purchased = models.BooleanField(default=False)
     
 class Address(models.Model):
     user = models.ForeignKey(Users, on_delete=models.CASCADE,unique=True)
@@ -142,4 +141,10 @@ class Purchase(models.Model):
     )
     purchased_at = models.DateTimeField(auto_now_add=True)
     has_purchased = models.BooleanField(default=False)
+    card_holder_name = models.CharField(null=True,blank=True)
     card_number = models.IntegerField(null=True,blank=True)
+    card_expiration_date = models.DateTimeField(null=True,blank=True)
+    card_security_code = models.IntegerField(null=True,blank=True)
+    
+    upi_id = models.CharField(null=True,blank=True)
+    upi_pin = models.IntegerField(null=True,blank=True)

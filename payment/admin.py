@@ -21,7 +21,7 @@ class CheckoutAdmin(admin.ModelAdmin):
     
 @admin.register(CheckoutItem)
 class CheckoutItemAdmin(admin.ModelAdmin):
-    list_display =('product','quantity','price','discount','final_price','coupon_code','purchased')
+    list_display =('product','quantity','price','discount','final_price','coupon_code')
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
