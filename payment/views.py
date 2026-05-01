@@ -180,9 +180,7 @@ class AddressView(generics.CreateAPIView):
             raise serializers.ValidationError({
                 "message": "Complete checkout before adding address."
             })
-        else:
-            Address.have_address = True
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user,have_address = True)
         
 class CouponCodeCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsSeller]

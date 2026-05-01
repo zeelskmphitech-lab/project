@@ -41,7 +41,7 @@ class CheckoutItem(models.Model):
     coupon_code = models.CharField(max_length=50, null=True, blank=True)
     
 class Address(models.Model):
-    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE,unique=True)
     country = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
