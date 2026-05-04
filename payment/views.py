@@ -233,28 +233,28 @@ class PurchaseView(generics.ListCreateAPIView):
         user= request.user
         checkout_id = self.kwargs.get('checkout_id')
         
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
         has_address = Address.objects.filter(
             user=self.request.user,
         ).exists()
         
-        if not has_address:
-            raise serializers.ValidationError({
-                "massage":"Please Assign Address First."
-            })
-        
         checkout = Checkout.objects.filter(id=checkout_id, user=user).first()
         
+        items = CheckoutItem.objects.filter(checkout=checkout)
+
+        if not has_address:
+            raise serializers.ValidationError({
+                "message":"Please Assign Address First."
+            })
+            
         if not checkout:
             return Response({"error": "Checkout record not found."}, status=404)
-        
-        items = CheckoutItem.objects.filter(checkout=checkout)
-        
+
         if not items.exists():
             return Response({"error": "No items in checkout"}, status=400)
-        
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
+
         payment_method = serializer.validated_data.get("payment_method")
         
         already_purchased = Purchase.objects.filter(user=user,checkoutitem__in=items,has_purchased=True).exists()

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Cart,CheckoutItem,Checkout,CartItem,Address,CouponCode,Reviews,Purchase
+from django.utils import timezone
 
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,3 +56,11 @@ class PurchaseSerializer(serializers.ModelSerializer):
         model = Purchase
         fields = ['payment_method','card_holder_name','card_number','card_expiration_date','card_security_code','upi_id','upi_pin']
         
+    def validate(self, data):
+        if data['payment_method']=='card' and not data['card_holder_name'] and not data['card_number'] and not data['card_expiration_date'] and not data['card_security_code']:
+            raise serializers.ValidationError({'message':'card details are required.'})
+        if data['card_expiration_date'] and data['card_expiration_date'] < timezone.now():
+            raise serializers.ValidationError({'message':'card is expired , try another card.'})
+        elif data['payment_method']=='upi' and not data['upi_id'] and not data['upi_pin']:
+            raise serializers.ValidationError({'message':'upi details are required.'})
+        return data
